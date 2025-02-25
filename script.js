@@ -348,13 +348,52 @@ achievements['catpetter'] = {
   description: 'You really love petting cats :D'
 };
 
+achievements['deathbycat'] = {
+  image: 'https://i1.sndcdn.com/artworks-72yxlmSCdMiI98OI-BMEuqg-t500x500.jpg',
+  title: 'Death by...cat?',
+  description: 'How did u get into this situation?'
+};
+
+achievements['catgod'] = {
+  image: 'https://qph.cf2.quoracdn.net/main-qimg-4f3bac9305514c4c0f8c757e62e1f9c5-lq',
+  title: 'Defeated Cat God',
+  description: 'You defeated cat god!'
+};
+
+achievements['scroll'] = {
+  title: 'Scrolling!',
+  description: 'You just scrolled the page.'
+};
+
+achievements['copy'] = {
+  title: 'Copied!',
+  description: 'You just copied something!'
+};
+
+achievements['paste'] = {
+  title: 'Pasted!',
+  description: 'You just pasted something!'
+};
+
+achievements['cut'] = {
+  title: 'Cut!',
+  description: 'You just cut something!'
+};
+
 const unlockedAchievements = new Set();
 let totalAchievements = Object.keys(achievements).length;
 let catInput = '';
 let achievementButtonClicks = 0;
 let catClicks = 0;
+let catImageVisible = false;
+let cutsceneActive = false;
+let catUnlocked = false;
+let clickCounter = 0;
+let deathTextClickCount = 0;
 
 function showAchievement(key) {
+  if (cutsceneActive) return;
+
   if (unlockedAchievements.has(key)) {
     return;
   }
@@ -439,7 +478,226 @@ function updateAchievementList() {
   `;
 }
 
+function showCatImage() {
+  if (catImageVisible) return;
+  catImageVisible = true;
+  let catImage = document.createElement('img');
+  catImage.src = 'https://static.vecteezy.com/system/resources/thumbnails/009/665/304/small/cute-kitty-cat-head-cartoon-element-free-png.png';
+  catImage.id = 'cat-image';
+  document.body.appendChild(catImage);
+
+  const clickCounterElement = document.createElement('div');
+  clickCounterElement.id = 'click-counter';
+  clickCounterElement.style.position = 'absolute';
+  clickCounterElement.style.top = '-20px';
+  clickCounterElement.style.left = '50%';
+  clickCounterElement.style.transform = 'translateX(-50%)';
+  clickCounterElement.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
+  clickCounterElement.style.color = 'white';
+  clickCounterElement.style.padding = '5px 10px';
+  clickCounterElement.style.borderRadius = '5px';
+  clickCounterElement.style.fontSize = '14px';
+  clickCounterElement.textContent = 'Clicks: 0';
+  catImage.parentElement.style.position = 'relative'; 
+  catImage.parentElement.appendChild(clickCounterElement);
+
+  catImage.addEventListener('click', catClickHandler);
+}
+
+function hideCatImage() {
+  if (!catImageVisible) return;
+  catImageVisible = false;
+  let catImage = document.querySelector('#cat-image');
+  if (catImage) {
+    catImage.removeEventListener('click', catClickHandler);
+    document.body.removeChild(catImage);
+  }
+  let clickCounterElement = document.querySelector('#click-counter');
+  if (clickCounterElement) {
+    clickCounterElement.remove();
+  }
+}
+
+function catClickHandler() {
+  catClicks++;
+  updateClickCounter(); 
+  if (catClicks >= 20) {
+    let catImage = document.querySelector('#cat-image');
+    let clickCounterElement = document.querySelector('#click-counter');
+    if (catImage) {
+      catImage.removeEventListener('click', catClickHandler);
+      clickCounterElement.remove();
+    }
+    startCatExplosionCutscene();
+  } else if (catClicks >= 10) {
+    showAchievement('catpetter');
+  }
+}
+
+function updateClickCounter() {
+  const clickCounterElement = document.querySelector('#click-counter');
+  if (clickCounterElement) {
+    clickCounterElement.textContent = `Clicks: ${catClicks}`;
+  }
+}
+
+async function playCatExplosionCutscene() {
+  const fadeOverlay = document.createElement('div');
+  fadeOverlay.id = 'fade-overlay';
+  const deathText = document.createElement('div');
+  deathText.id = 'death-text';
+  fadeOverlay.appendChild(deathText);
+  document.body.appendChild(fadeOverlay);
+
+  const textLines = [
+    "hewo huemen, u makin my kity go boom :(",
+    "me vewy sad",
+    "goodbye fwend >.<"
+  ];
+
+  fadeOverlay.classList.add('active');
+
+  await typewriteText(deathText, textLines);
+  deathTextClickCount = 0;
+
+  return fadeOverlay;
+}
+
+function startCatGodBattle(fadeOverlay, deathText) {
+  deathText.remove();
+  // Initialize Cat God
+  const catGod = document.createElement('img');
+  catGod.id = 'cat-god';
+  catGod.src = 'https://qph.cf2.quoracdn.net/main-qimg-4f3bac9305514c4c0f8c757e62e1f9c5-lq';
+  document.body.appendChild(catGod);
+
+  // Health Bar
+  const healthBarContainer = document.createElement('div');
+  healthBarContainer.id = 'health-bar-container';
+  const healthBar = document.createElement('div');
+  healthBar.id = 'health-bar';
+  healthBarContainer.appendChild(healthBar);
+  document.body.appendChild(healthBarContainer);
+
+  let catGodHealth = 100;
+  let catGodClicks = 0;
+  let shapes = [];
+
+  // Function to move Cat God randomly
+  function moveCatGod() {
+    catGod.style.left = `${Math.random() * (window.innerWidth - 200)}px`;
+    catGod.style.top = `${Math.random() * (window.innerHeight - 200)}px`;
+  }
+
+  // Function to create falling shapes
+  function createFallingShape() {
+    const shape = document.createElement('div');
+    shape.classList.add('falling-shape');
+    shape.style.left = `${Math.random() * window.innerWidth}px`;
+    shape.style.top = '-30px';
+    document.body.appendChild(shape);
+    shapes.push(shape);
+
+    // Animate the shape
+    let animation = shape.animate({
+      top: window.innerHeight + 'px'
+    }, {
+      duration: Math.random() * 3000 + 2000,
+      iterations: 1
+    });
+
+    animation.onfinish = () => {
+      shape.remove();
+      shapes = shapes.filter(s => s !== shape);
+    };
+  }
+
+  // Check for collision
+  function checkCollision(x, y) {
+    for (const shape of shapes) {
+      const rect = shape.getBoundingClientRect();
+      if (x > rect.left && x < rect.right && y > rect.top && y < rect.bottom) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  // Set interval for Cat God movement and shape creation
+  const moveInterval = setInterval(moveCatGod, 1500);
+  const shapeInterval = setInterval(createFallingShape, 1000);
+
+  // Handle click
+  function handleCatGodClick(event) {
+    catGodClicks++;
+    catGodHealth -= 10;
+    healthBar.style.width = `${catGodHealth}%`;
+
+    if (checkCollision(event.clientX, event.clientY)) {
+      clearScreen(fadeOverlay, catGod, healthBarContainer, moveInterval, shapeInterval, handleCatGodClick);
+      return;
+    }
+
+    if (catGodClicks >= 10) {
+      clearInterval(moveInterval);
+      clearInterval(shapeInterval);
+      catGod.removeEventListener('click', handleCatGodClick);
+      catGod.remove();
+      healthBarContainer.remove();
+      shapes.forEach(shape => shape.remove());
+      fadeOverlay.classList.remove('active');
+      document.body.removeChild(fadeOverlay);
+      showAchievement('catgod');
+      cutsceneActive = false;
+      catClicks = 0;
+      if (catUnlocked) {
+        showCatImage();
+      }
+    }
+  }
+
+  catGod.addEventListener('click', handleCatGodClick);
+  fadeOverlay.removeEventListener('click', handleCatGodClick);
+}
+
+function clearScreen(fadeOverlay, catGod, healthBarContainer, moveInterval, shapeInterval, handleCatGodClick) {
+  clearInterval(moveInterval);
+  clearInterval(shapeInterval);
+  catGod.removeEventListener('click', handleCatGodClick);
+  catGod.remove();
+  healthBarContainer.remove();
+  shapes.forEach(shape => shape.remove());
+  fadeOverlay.classList.remove('active');
+  document.body.removeChild(fadeOverlay);
+  showAchievement('deathbycat');
+  cutsceneActive = false;
+  catClicks = 0;
+  if (catUnlocked) {
+    showCatImage();
+  }
+}
+
+async function delay(ms) {
+  return new Promise(res => setTimeout(res, ms));
+}
+
+async function typewriteText(element, lines) {
+  element.classList.remove('active'); 
+  element.textContent = ''; 
+  element.classList.add('active');
+
+  for (const line of lines) {
+    for (let i = 0; i < line.length; i++) {
+      element.textContent += line[i];
+      await delay(50);
+    }
+    element.textContent += '\n';
+    await delay(500);
+  }
+}
+
 document.addEventListener('keydown', (event) => {
+  if (cutsceneActive) return;
   let key = event.key;
   let achievementKey = key.toLowerCase();
 
@@ -464,6 +722,20 @@ document.addEventListener('keydown', (event) => {
   if (catInput.includes('cat')) {
     showAchievement('cat');
     catInput = '';
+    catUnlocked = true;
+    if (!cutsceneActive) {
+      playCatExplosionCutscene().then(fadeOverlay => {
+        setTimeout(() => {
+          const deathText = document.createElement('div');
+          deathText.id = 'death-text';
+          startCatGodBattle(fadeOverlay, deathText);
+        }, 1000);
+      });
+    }
+  } else {
+    if (!catInput.includes('cat') && !catUnlocked) {
+      hideCatImage();
+    }
   }
   if (catInput.length > 3) {
     catInput = catInput.slice(1);
@@ -484,29 +756,53 @@ document.addEventListener('keydown', (event) => {
 });
 
 document.addEventListener('click', () => {
+  if (cutsceneActive) return;
   showAchievement('click');
 });
 
 document.addEventListener('contextmenu', (event) => {
+  if (cutsceneActive) return;
   event.preventDefault();
   showAchievement('contextmenu');
 });
 
 document.addEventListener('mousemove', () => {
+  if (cutsceneActive) return;
   showAchievement('mousemove');
 });
 
-const catImage = document.createElement('img');
-catImage.src = 'https://static.vecteezy.com/system/resources/thumbnails/009/665/304/small/cute-kitty-cat-head-cartoon-element-free-png.png';
-catImage.id = 'cat-image';
-document.body.appendChild(catImage);
+document.addEventListener('wheel', () => {
+  if (cutsceneActive) return;
+  showAchievement('scroll');
+});
 
-catImage.addEventListener('click', () => {
-  catClicks++;
-  if (catClicks >= 10) {
-    showAchievement('catpetter');
-    catClicks = 0;
-  }
+document.addEventListener('copy', () => {
+  if (cutsceneActive) return;
+  showAchievement('copy');
+});
+
+document.addEventListener('paste', () => {
+  if (cutsceneActive) return;
+  showAchievement('paste');
+});
+
+document.addEventListener('cut', () => {
+  if (cutsceneActive) return;
+  showAchievement('cut');
+});
+
+const aboutTab = document.createElement('div');
+aboutTab.id = 'about-tab';
+aboutTab.textContent = 'About the Developers';
+document.body.appendChild(aboutTab);
+
+const aboutContent = document.createElement('div');
+aboutContent.id = 'about-content';
+aboutContent.innerHTML = '<p>Abc and Cat are people</p>';
+document.body.appendChild(aboutContent);
+
+aboutTab.addEventListener('click', () => {
+  aboutContent.classList.toggle('open');
 });
 
 updateAchievementList();
