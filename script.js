@@ -354,12 +354,6 @@ achievements['deathbycat'] = {
   description: 'How did u get into this situation?'
 };
 
-achievements['catgod'] = {
-  image: 'https://qph.cf2.quoracdn.net/main-qimg-4f3bac9305514c4c0f8c757e62e1f9c5-lq',
-  title: 'Defeated Cat God',
-  description: 'You defeated cat god!'
-};
-
 achievements['scroll'] = {
   title: 'Scrolling!',
   description: 'You just scrolled the page.'
@@ -389,7 +383,6 @@ let catImageVisible = false;
 let cutsceneActive = false;
 let catUnlocked = false;
 let clickCounter = 0;
-let deathTextClickCount = 0;
 
 function showAchievement(key) {
   if (cutsceneActive) return;
@@ -541,6 +534,25 @@ function updateClickCounter() {
   }
 }
 
+function startCatExplosionCutscene() {
+  cutsceneActive = true;
+  let catImage = document.querySelector('#cat-image');
+  let clickCounterElement = document.querySelector('#click-counter');
+
+  if (catImage) {
+    catImage.src = 'https://media.pinatafarm.com/protected/9CB33540-63CA-4013-AD4C-17771C92EDC4/e60c8403-7246-497d-a2b3-23a178e97dfe-1666892115455-pfarm-with-png-watermarked.webp';
+  }
+  setTimeout(() => {
+    if (catImage) {
+      catImage.remove();
+    }
+    if (clickCounterElement) {
+      clickCounterElement.remove();
+    }
+    playCatExplosionCutscene();
+  }, 1000);
+}
+
 async function playCatExplosionCutscene() {
   const fadeOverlay = document.createElement('div');
   fadeOverlay.id = 'fade-overlay';
@@ -558,126 +570,32 @@ async function playCatExplosionCutscene() {
   fadeOverlay.classList.add('active');
 
   await typewriteText(deathText, textLines);
-  deathTextClickCount = 0;
 
-  return fadeOverlay;
+  document.body.style.transition = 'background-color 0.1s ease';
+  for (let i = 0; i < 5; i++) {
+    document.body.style.backgroundColor = 'white';
+    await delay(100);
+    document.body.style.backgroundColor = 'black';
+    await delay(100);
+  }
+  document.body.style.backgroundColor = '';
+  document.body.style.transition = '';
+
+  deathText.classList.add('active');
+  setTimeout(() => {
+    deathText.classList.remove('active');
+    fadeOverlay.classList.remove('active');
+    document.body.removeChild(fadeOverlay);
+    showAchievement('deathbycat');
+    catClicks = 0;
+    cutsceneActive = false;
+    if(catUnlocked){
+      showCatImage();
+    }
+  }, 3000);
 }
 
-function startCatGodBattle(fadeOverlay, deathText) {
-  deathText.remove();
-  // Initialize Cat God
-  const catGod = document.createElement('img');
-  catGod.id = 'cat-god';
-  catGod.src = 'https://qph.cf2.quoracdn.net/main-qimg-4f3bac9305514c4c0f8c757e62e1f9c5-lq';
-  document.body.appendChild(catGod);
-
-  // Health Bar
-  const healthBarContainer = document.createElement('div');
-  healthBarContainer.id = 'health-bar-container';
-  const healthBar = document.createElement('div');
-  healthBar.id = 'health-bar';
-  healthBarContainer.appendChild(healthBar);
-  document.body.appendChild(healthBarContainer);
-
-  let catGodHealth = 100;
-  let catGodClicks = 0;
-  let shapes = [];
-
-  // Function to move Cat God randomly
-  function moveCatGod() {
-    catGod.style.left = `${Math.random() * (window.innerWidth - 200)}px`;
-    catGod.style.top = `${Math.random() * (window.innerHeight - 200)}px`;
-  }
-
-  // Function to create falling shapes
-  function createFallingShape() {
-    const shape = document.createElement('div');
-    shape.classList.add('falling-shape');
-    shape.style.left = `${Math.random() * window.innerWidth}px`;
-    shape.style.top = '-30px';
-    document.body.appendChild(shape);
-    shapes.push(shape);
-
-    // Animate the shape
-    let animation = shape.animate({
-      top: window.innerHeight + 'px'
-    }, {
-      duration: Math.random() * 3000 + 2000,
-      iterations: 1
-    });
-
-    animation.onfinish = () => {
-      shape.remove();
-      shapes = shapes.filter(s => s !== shape);
-    };
-  }
-
-  // Check for collision
-  function checkCollision(x, y) {
-    for (const shape of shapes) {
-      const rect = shape.getBoundingClientRect();
-      if (x > rect.left && x < rect.right && y > rect.top && y < rect.bottom) {
-        return true;
-      }
-    }
-    return false;
-  }
-
-  // Set interval for Cat God movement and shape creation
-  const moveInterval = setInterval(moveCatGod, 1500);
-  const shapeInterval = setInterval(createFallingShape, 1000);
-
-  // Handle click
-  function handleCatGodClick(event) {
-    catGodClicks++;
-    catGodHealth -= 10;
-    healthBar.style.width = `${catGodHealth}%`;
-
-    if (checkCollision(event.clientX, event.clientY)) {
-      clearScreen(fadeOverlay, catGod, healthBarContainer, moveInterval, shapeInterval, handleCatGodClick);
-      return;
-    }
-
-    if (catGodClicks >= 10) {
-      clearInterval(moveInterval);
-      clearInterval(shapeInterval);
-      catGod.removeEventListener('click', handleCatGodClick);
-      catGod.remove();
-      healthBarContainer.remove();
-      shapes.forEach(shape => shape.remove());
-      fadeOverlay.classList.remove('active');
-      document.body.removeChild(fadeOverlay);
-      showAchievement('catgod');
-      cutsceneActive = false;
-      catClicks = 0;
-      if (catUnlocked) {
-        showCatImage();
-      }
-    }
-  }
-
-  catGod.addEventListener('click', handleCatGodClick);
-  fadeOverlay.removeEventListener('click', handleCatGodClick);
-}
-
-function clearScreen(fadeOverlay, catGod, healthBarContainer, moveInterval, shapeInterval, handleCatGodClick) {
-  clearInterval(moveInterval);
-  clearInterval(shapeInterval);
-  catGod.removeEventListener('click', handleCatGodClick);
-  catGod.remove();
-  healthBarContainer.remove();
-  shapes.forEach(shape => shape.remove());
-  fadeOverlay.classList.remove('active');
-  document.body.removeChild(fadeOverlay);
-  showAchievement('deathbycat');
-  cutsceneActive = false;
-  catClicks = 0;
-  if (catUnlocked) {
-    showCatImage();
-  }
-}
-
-async function delay(ms) {
+function delay(ms) {
   return new Promise(res => setTimeout(res, ms));
 }
 
@@ -721,17 +639,9 @@ document.addEventListener('keydown', (event) => {
   catInput += key.toLowerCase();
   if (catInput.includes('cat')) {
     showAchievement('cat');
+    showCatImage();
     catInput = '';
     catUnlocked = true;
-    if (!cutsceneActive) {
-      playCatExplosionCutscene().then(fadeOverlay => {
-        setTimeout(() => {
-          const deathText = document.createElement('div');
-          deathText.id = 'death-text';
-          startCatGodBattle(fadeOverlay, deathText);
-        }, 1000);
-      });
-    }
   } else {
     if (!catInput.includes('cat') && !catUnlocked) {
       hideCatImage();
