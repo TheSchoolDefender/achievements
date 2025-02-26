@@ -323,6 +323,13 @@
   transform: translate(-50%, 50px);
 }
 
+#about-content p a {
+  color: inherit;
+  text-decoration: none;
+  pointer-events: auto;
+  cursor: pointer;
+}
+
 #fade-overlay {
   position: fixed;
   top: 0;
@@ -360,4 +367,22 @@
 
 #click-counter {
   display: none;
+}
+
+#key-image-container {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    width: 64px;
+    height: 64px;
+    background-color: black;
+    border: 2px solid #555;
+    box-sizing: border-box;
+    z-index: 1005;
+}
+
+#key-image {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
 }
