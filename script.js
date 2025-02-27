@@ -774,8 +774,53 @@ achievements['ctrlshiftb'] = {
   title: 'Ctrl + Shift + B',
   description: 'You just pressed Ctrl + Shift + B'
 };
+achievements['rng'] = {
+  title: 'RNG',
+  description: 'Type the word rng to unlock "RNG World".'
+};
+achievements['common'] = {
+  title: 'Common',
+  description: 'You rolled a common item!'
+};
+achievements['uncommon'] = {
+  title: 'Uncommon',
+  description: 'You rolled an uncommon item!'
+};
+achievements['rare'] = {
+  title: 'Rare',
+  description: 'You rolled a rare item!'
+};
+achievements['superrare'] = {
+  title: 'Super Rare',
+  description: 'You rolled a super rare item!'
+};
+achievements['epic'] = {
+  title: 'Epic',
+  description: 'You rolled an epic item!'
+};
+achievements['mythic'] = {
+  title: 'Mythic',
+  description: 'You rolled a mythic item!'
+};
+achievements['legendary'] = {
+  title: 'Legendary',
+  description: 'You rolled a legendary item!'
+};
+achievements['chromatic'] = {
+  title: 'Chromatic',
+  description: 'You rolled a chromatic item!'
+};
+achievements['godly'] = {
+  title: 'Godly',
+  description: 'You rolled a godly item!'
+};
+achievements['hypercharged'] = {
+  title: 'Hypercharged',
+  description: 'You rolled a hypercharged item!'
+};
 
 const unlockedAchievements = new Set();
+let luckMultiplier = 1;
 let totalAchievements = Object.keys(achievements).length;
 let catInput = '';
 let achievementButtonClicks = 0;
@@ -784,6 +829,10 @@ let catImageVisible = false;
 let cutsceneActive = false;
 let catUnlocked = false;
 let clickCounter = 0;
+let keyImageVisible = false;
+let rngUnlocked = false;
+let canRoll = true;
+const rollCooldownTime = 5000;
 
 function showAchievement(key) {
   if (cutsceneActive) return;
@@ -794,6 +843,9 @@ function showAchievement(key) {
 
   unlockedAchievements.add(key);
   updateAchievementList();
+  if(rngUnlocked){
+    updateLuckDisplay();
+  }
   const achievementData = achievements[key];
 
   if (!achievementData) {
@@ -990,7 +1042,29 @@ async function playCatExplosionCutscene() {
     catClicks = 0;
     cutsceneActive = false;
     if(catUnlocked){
-      showCatImage();
+      let catImage = document.createElement('img');
+      catImage.src = 'https://static.vecteezy.com/system/resources/thumbnails/009/665/304/small/cute-kitty-cat-head-cartoon-element-free-png.png';
+      catImage.id = 'cat-image';
+      document.body.appendChild(catImage);
+      catImage.addEventListener('click', catClickHandler);
+
+      const clickCounterElement = document.createElement('div');
+      clickCounterElement.id = 'click-counter';
+      clickCounterElement.style.position = 'absolute';
+      clickCounterElement.style.top = '-20px';
+      clickCounterElement.style.left = '50%';
+      clickCounterElement.style.transform = 'translateX(-50%)';
+      clickCounterElement.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
+      clickCounterElement.style.color = 'white';
+      clickCounterElement.style.padding = '5px 10px';
+      clickCounterElement.style.borderRadius = '5px';
+      clickCounterElement.style.fontSize = '14px';
+      clickCounterElement.textContent = 'Clicks: 0';
+      catImage.parentElement.style.position = 'relative'; 
+      catImage.parentElement.appendChild(clickCounterElement);
+
+      catClicks = 0;
+      updateClickCounter();
     }
   }, 3000);
 }
@@ -1012,6 +1086,283 @@ async function typewriteText(element, lines) {
     element.textContent += '\n';
     await delay(500);
   }
+}
+
+const rollTab = document.createElement('div');
+rollTab.id = 'roll-tab';
+rollTab.textContent = 'Roll';
+rollTab.style.display = 'none';
+document.body.appendChild(rollTab);
+
+const rollLuck = document.createElement('div');
+rollLuck.id = 'roll-luck';
+rollLuck.style.display = 'none';
+document.body.appendChild(rollLuck);
+
+const rollProbability = document.createElement('div');
+rollProbability.id = 'roll-probability';
+document.body.appendChild(rollProbability);
+
+const rollResult = document.createElement('div');
+rollResult.id = 'roll-result';
+document.body.appendChild(rollResult);
+
+const rollCooldownContainer = document.createElement('div');
+rollCooldownContainer.id = 'roll-cooldown-container';
+const rollCooldownBar = document.createElement('div');
+rollCooldownBar.id = 'roll-cooldown-bar';
+rollCooldownContainer.appendChild(rollCooldownBar);
+rollTab.appendChild(rollCooldownContainer);
+
+const resetContainer = document.createElement('div');
+resetContainer.id = 'reset-container';
+resetContainer.innerHTML = `
+    <p>Are you really sure you want to reset?</p>
+    <button id="reset-yes">Yes</button>
+    <button id="reset-no">No</button>
+`;
+document.body.appendChild(resetContainer);
+
+resetContainer.querySelector('#reset-yes').addEventListener('click', () => {
+    resetAllData();
+    resetContainer.style.display = 'none';
+});
+
+resetContainer.querySelector('#reset-no').addEventListener('click', () => {
+    resetContainer.style.display = 'none';
+});
+
+function resetAllData() {
+  localStorage.clear();
+  unlockedAchievements.clear();
+  catInput = '';
+  achievementButtonClicks = 0;
+  catClicks = 0;
+  catImageVisible = false;
+  cutsceneActive = false;
+  catUnlocked = false;
+  clickCounter = 0;
+  keyImageVisible = false;
+  rngUnlocked = false;
+  canRoll = true;
+  rollCooldownTime = 5000; 
+  luckMultiplier = 1;
+  totalAchievements = Object.keys(achievements).length;
+
+  hideCatImage();
+  document.getElementById('roll-tab').style.display = 'none';
+  document.getElementById('roll-luck').style.display = 'none';
+
+  updateAchievementList();
+}
+
+function calculateLuckMultiplier() {
+    return 1 + (unlockedAchievements.size * 0.025);
+}
+
+function updateLuckDisplay() {
+    luckMultiplier = calculateLuckMultiplier();
+    rollLuck.textContent = `Luck: ${luckMultiplier.toFixed(3)}`;
+    rollLuck.style.display = 'none';
+    const luckDisplay = document.createElement('div');
+    luckDisplay.id = 'luck-display';
+    luckDisplay.textContent = `Luck: ${luckMultiplier.toFixed(3)}`;
+    rollTab.appendChild(luckDisplay);
+}
+
+rollTab.addEventListener('click', () => {
+  if (canRoll) {
+    rollItem();
+  }
+});
+
+function rollItem() {
+  if (!canRoll) return;
+
+  canRoll = false;
+  rollTab.style.pointerEvents = 'none';
+  rollResult.style.display = 'none';
+  rollProbability.style.display = 'none';
+
+  const items = {
+    'common': 0.5,
+    'uncommon': 0.2,
+    'rare': 0.1,
+    'superrare': 0.05,
+    'epic': 0.0333,
+    'mythic': 0.02,
+    'legendary': 0.01,
+    'chromatic': 0.00666,
+    'godly': 0.005,
+    'hypercharged': 0.0025
+  };
+
+  let roll = Math.random() / luckMultiplier; 
+
+  let rolledItem = null;
+
+  for (const item in items) {
+    if (roll < items[item]) {
+      rolledItem = item;
+      break;
+    }
+    roll -= items[item];
+  }
+
+  if (!rolledItem) {
+    rolledItem = 'common';
+  }
+  
+  rollResult.textContent = rolledItem.charAt(0).toUpperCase() + rolledItem.slice(1);
+  rollResult.style.display = 'block';
+
+  let probabilityText = '';
+    switch (rolledItem) {
+        case 'common': probabilityText = '1 in 2'; break;
+        case 'uncommon': probabilityText = '1 in 5'; break;
+        case 'rare': probabilityText = '1 in 10'; break;
+        case 'superrare': probabilityText = '1 in 20'; break;
+        case 'epic': probabilityText = '1 in 30'; break;
+        case 'mythic': probabilityText = '1 in 50'; break;
+        case 'legendary': probabilityText = '1 in 100'; break;
+        case 'chromatic': probabilityText = '1 in 150'; break;
+        case 'godly': probabilityText = '1 in 200'; break;
+        case 'hypercharged': probabilityText = '1 in 400'; break;
+        default: probabilityText = 'Unknown'; break;
+    }
+
+  rollProbability.textContent = `(${probabilityText})`;
+  rollProbability.style.display = 'block';
+  rollResult.classList.add(rolledItem);
+  setTimeout(() => {
+    rollResult.style.display = 'none';
+    rollProbability.style.display = 'none';
+    rollResult.className = 'roll-result';
+  }, 3000);
+
+  showAchievement(rolledItem);
+  startCooldown();
+}
+
+function startCooldown() {
+  rollCooldownContainer.style.display = 'block';
+  rollCooldownContainer.style.width = '100%';
+  rollCooldownContainer.style.height = '100%';
+  rollCooldownBar.style.width = '100%';
+  rollCooldownBar.style.height = '100%';
+  rollCooldownBar.style.transition = `width ${rollCooldownTime / 1000}s linear`;
+
+  setTimeout(() => {
+    rollCooldownBar.style.width = '0%';
+  }, 50);
+
+  setTimeout(() => {
+    canRoll = true;
+    rollTab.style.pointerEvents = 'auto';
+    rollCooldownContainer.style.display = 'none';
+    rollCooldownContainer.style.width = '100%';
+    rollCooldownContainer.style.height = '100%';
+    rollCooldownBar.style.width = '100%'; 
+    rollCooldownBar.style.height = '100%';
+    rollCooldownBar.style.transition = 'width 0.1s linear'; 
+  }, rollCooldownTime);
+}
+
+achievements['developerskey'] = {
+    title: 'Developers Key',
+    description: 'woah :o howd u find this?'
+};
+
+function saveAchievements() {
+    localStorage.setItem('unlockedAchievements', JSON.stringify(Array.from(unlockedAchievements)));
+}
+
+function loadAchievements() {
+    const savedAchievements = localStorage.getItem('unlockedAchievements');
+    if (savedAchievements) {
+        const parsedAchievements = JSON.parse(savedAchievements);
+        parsedAchievements.forEach(achievement => unlockedAchievements.add(achievement));
+    }
+}
+
+function saveCatUnlocked() {
+  localStorage.setItem('catUnlocked', JSON.stringify(catUnlocked));
+}
+
+function loadCatUnlocked() {
+    const savedCatUnlocked = localStorage.getItem('catUnlocked');
+    if (savedCatUnlocked) {
+      catUnlocked = JSON.parse(savedCatUnlocked);
+    }
+}
+
+function saveRngUnlocked() {
+  localStorage.setItem('rngUnlocked', JSON.stringify(rngUnlocked));
+}
+
+function loadRngUnlocked() {
+    const savedRngUnlocked = localStorage.getItem('rngUnlocked');
+    if (savedRngUnlocked) {
+      rngUnlocked = JSON.parse(savedRngUnlocked);
+    }
+}
+
+function saveClickCounter() {
+  localStorage.setItem('clickCounter', JSON.stringify(catClicks));
+}
+
+function loadClickCounter() {
+    const savedClickCounter = localStorage.getItem('clickCounter');
+    if (savedClickCounter) {
+      catClicks = JSON.parse(savedClickCounter);
+    }
+}
+
+function saveKeyVisable() {
+  localStorage.setItem('keyImageVisible', JSON.stringify(keyImageVisible));
+}
+
+function loadKeyVisable() {
+    const savedKeyVisable = localStorage.getItem('keyImageVisible');
+    if (savedKeyVisable) {
+      keyImageVisible = JSON.parse(savedKeyVisable);
+    }
+}
+
+function saveCatInput() {
+  localStorage.setItem('catInput', JSON.stringify(catInput));
+}
+
+function loadCatInput() {
+    const savedCatInput = localStorage.getItem('catInput');
+    if (savedCatInput) {
+      catInput = JSON.parse(savedCatInput);
+    }
+}
+
+function saveAll() {
+  localStorage.setItem('catUnlocked', JSON.stringify(catUnlocked));
+  localStorage.setItem('rngUnlocked', JSON.stringify(rngUnlocked));
+  localStorage.setItem('catClicks', JSON.stringify(catClicks));
+  localStorage.setItem('keyImageVisible', JSON.stringify(keyImageVisible));
+  localStorage.setItem('catInput', JSON.stringify(catInput));
+}
+
+function loadAll() {
+  loadCatUnlocked();
+  loadRngUnlocked();
+  loadClickCounter();
+  loadKeyVisable();
+  loadCatInput();
+
+  if(catUnlocked){
+    showCatImage();
+  }
+  if(rngUnlocked){
+    document.getElementById('roll-tab').style.display = 'block';
+    updateLuckDisplay();
+  }
+  updateClickCounter();
 }
 
 document.addEventListener('keydown', (event) => {
@@ -1327,6 +1678,7 @@ document.addEventListener('keydown', (event) => {
 
   if (achievements.hasOwnProperty(achievementKey)) {
     showAchievement(achievementKey);
+    saveAchievements();
   } else if (key.length === 1 && key === key.toUpperCase() && key !== key.toLowerCase()) {
     achievementKey = key.toLowerCase();
 
@@ -1338,9 +1690,12 @@ document.addEventListener('keydown', (event) => {
 
     achievements[capitalizedAchievementKey] = capitalizedAchievement;
     showAchievement(capitalizedAchievementKey);
+    saveAchievements();
   } else if (key === ' ') {
     showAchievement('space');
+    saveAchievements();
   }
+  saveAll();
 
   catInput += key.toLowerCase();
   if (catInput.includes('cat')) {
@@ -1348,12 +1703,34 @@ document.addEventListener('keydown', (event) => {
     showCatImage();
     catInput = '';
     catUnlocked = true;
+    saveAll();
   } else {
     if (!catInput.includes('cat') && !catUnlocked) {
       hideCatImage();
+      saveAll();
     }
   }
-  if (catInput.length > 3) {
+  if (catInput.includes('rng')) {
+    showAchievement('rng');
+    rngUnlocked = true;
+    document.getElementById('roll-tab').style.display = 'block';
+
+    const existingLuckDisplay = document.getElementById('luck-display');
+    if (existingLuckDisplay) {
+      existingLuckDisplay.remove();
+    }
+
+    updateLuckDisplay();
+    catInput = '';
+    saveAll();
+  } else {
+    document.getElementById('roll-tab').style.display = 'none';
+  }
+  if (catInput.includes('reset')) {
+    resetContainer.style.display = 'block';
+    catInput = '';
+  }
+  if (catInput.length > 5) {
     catInput = catInput.slice(1);
   }
 
@@ -1362,49 +1739,59 @@ document.addEventListener('keydown', (event) => {
     updateAchievementList();
     if (achievementContainer.classList.contains('open')) {
       showAchievement('openachievements');
+      saveAchievements();
       achievementButtonClicks++;
       if (achievementButtonClicks >= 10) {
         showAchievement('achievementmasher');
+        saveAchievements();
         achievementButtonClicks = 0;
       }
     }
   }
+  saveAchievements();
 });
 
 document.addEventListener('click', () => {
   if (cutsceneActive) return;
   showAchievement('click');
+  saveAchievements();
 });
 
 document.addEventListener('contextmenu', (event) => {
   if (cutsceneActive) return;
   event.preventDefault();
   showAchievement('contextmenu');
+  saveAchievements();
 });
 
 document.addEventListener('mousemove', () => {
   if (cutsceneActive) return;
   showAchievement('mousemove');
+  saveAchievements();
 });
 
 document.addEventListener('wheel', () => {
   if (cutsceneActive) return;
   showAchievement('scroll');
+  saveAchievements();
 });
 
 document.addEventListener('copy', () => {
   if (cutsceneActive) return;
   showAchievement('copy');
+  saveAchievements();
 });
 
 document.addEventListener('paste', () => {
   if (cutsceneActive) return;
   showAchievement('paste');
+  saveAchievements();
 });
 
 document.addEventListener('cut', () => {
   if (cutsceneActive) return;
   showAchievement('cut');
+  saveAchievements();
 });
 
 const aboutTab = document.createElement('div');
@@ -1422,9 +1809,9 @@ aboutTab.addEventListener('click', () => {
 });
 
 const catNameSpan = document.getElementById('cat-name');
-let keyImageVisible = false;
 catNameSpan.addEventListener('click', () => {
     showAchievement('developerskey');
+    saveAchievements();
     if (!keyImageVisible) {
         keyImageVisible = true;
         const keyImageContainer = document.createElement('div');
@@ -1434,13 +1821,11 @@ catNameSpan.addEventListener('click', () => {
         keyImage.id = 'key-image';
         keyImageContainer.appendChild(keyImage);
         document.body.appendChild(keyImageContainer);
+        saveKeyVisable();
     }
 });
 
-achievements['developerskey'] = {
-    title: 'Developers Key',
-    description: 'woah :o howd u find this?'
-};
-
 totalAchievements = Object.keys(achievements).length;
 updateAchievementList();
+loadAchievements();
+loadAll();
